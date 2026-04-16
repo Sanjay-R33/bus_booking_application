@@ -15,7 +15,11 @@ public class BusService {
 
 
     public Bus addBus(Bus bus) {
-        return busRepository.save(bus);
+
+
+            bus.setAvailableSeats(bus.getTotalSeats()); // initially full
+            return busRepository.save(bus);
+
     }
 
     public List<Bus> search(String source, String destination) {

@@ -33,6 +33,9 @@ public class Bus {
     @Min(1)
     private int totalSeats;
 
+    @Min(0)
+    private int availableSeats;
+
     @Positive
     private double fare;
 }

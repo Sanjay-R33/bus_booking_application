@@ -13,7 +13,7 @@ import java.util.List;
 @NoArgsConstructor
 public class SeatService {
 
-    private final SeatRepository seatRepository;
+    private  SeatRepository seatRepository;
 
     public SeatService(SeatRepository seatRepository) {
         this.seatRepository = seatRepository;
