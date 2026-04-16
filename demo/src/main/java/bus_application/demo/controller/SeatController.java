@@ -11,7 +11,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/seats")
 @RequiredArgsConstructor
-@NoArgsConstructor
+
 public class SeatController {
 
     private  SeatService seatService;

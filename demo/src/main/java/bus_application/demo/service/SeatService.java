@@ -10,7 +10,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-@NoArgsConstructor
+
 public class SeatService {
 
     private  SeatRepository seatRepository;

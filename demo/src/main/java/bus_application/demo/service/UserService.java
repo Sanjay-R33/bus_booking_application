@@ -8,14 +8,15 @@ import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-@NoArgsConstructor
+
 public class UserService {
 
     private  UserRepository userRepository;
     private EmailService emailService;
 
-    public UserService(UserRepository userRepository, EmailService emailService) {
+    public UserService(UserRepository userRepository, EmailService emailService, EmailService emailService1) {
         this.userRepository = userRepository;
+        this.emailService = emailService1;
     }
 
     public User register(User user) {
