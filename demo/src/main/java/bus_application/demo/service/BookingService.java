@@ -12,10 +12,19 @@ import java.util.List;
 @RequiredArgsConstructor
 public class BookingService {
 
-    private final BookingRepository bookingRepository;
-    private final UserRepository userRepository;
-    private final BusRepository busRepository;
-    private final SeatRepository seatRepository;
+    private  BookingRepository bookingRepository;
+    private  UserRepository userRepository;
+    private  BusRepository busRepository;
+    private  SeatRepository seatRepository;
+    private  EmailService emailService;
+
+    public BookingService(BookingRepository bookingRepository, UserRepository userRepository, BusRepository busRepository, SeatRepository seatRepository, EmailService emailService){
+        this.bookingRepository = bookingRepository;
+        this.userRepository = userRepository;
+        this.busRepository = busRepository;
+        this.seatRepository = seatRepository;
+        this.emailService = emailService;
+    }
 
     public Booking createBooking(Booking booking) {
 
@@ -56,7 +65,19 @@ public class BookingService {
         // save both
         busRepository.save(bus);
 
-        return bookingRepository.save(booking);
+        Booking booked= bookingRepository.save(booking);
+
+        emailService.sendEmail(
+                booking.getUser().getEmail(),
+                "Booking Confirmed 🎟",
+                "Hi " + booking.getUser().getName() + ",\n\n" +
+                        "Your booking is confirmed.\n" +
+                        "Bus: " + booking.getBus().getSource() + " → " + booking.getBus().getDestination() + "\n" +
+                        "Seats: " + booking.getSeats().size() + "\n" +
+                        "Amount: ₹" + booking.getAmount()
+        );
+
+        return booked;
     }
 
     public Booking cancelBooking(Long bookingId) {
@@ -70,7 +91,7 @@ public class BookingService {
 
         Bus bus = booking.getBus();
 
-        // 💺 Increase seats back
+        // Increase seats back
         int seatsToReturn = booking.getSeats().size();
         bus.setAvailableSeats(bus.getAvailableSeats() + seatsToReturn);
 

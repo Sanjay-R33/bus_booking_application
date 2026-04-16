@@ -1,6 +1,7 @@
 package bus_application.demo.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 
@@ -22,4 +23,8 @@ public class User {
 
     @NotBlank(message = "Password is required")
     private String password;
+
+    @NotBlank
+    @Email
+    private String email;
 }

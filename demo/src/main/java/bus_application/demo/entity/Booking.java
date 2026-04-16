@@ -25,17 +25,17 @@ public class Booking {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // 👤 Many bookings → One user
+    // Many bookings → One user
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    // 🚍 Many bookings → One bus
+    // Many bookings → One bus
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "bus_id", nullable = false)
     private Bus bus;
 
-    // 💺 Many bookings ↔ Many seats
+    // Many bookings ↔ Many seats
     @ManyToMany
     @JoinTable(
             name = "booking_seats",
