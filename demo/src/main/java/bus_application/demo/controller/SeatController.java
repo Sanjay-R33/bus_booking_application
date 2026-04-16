@@ -1,0 +1,20 @@
+package bus_application.demo.controller;
+
+import bus_application.demo.entity.Seat;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/seats")
+@RequiredArgsConstructor
+public class SeatController {
+
+    private final SeatService seatService;
+
+    @GetMapping("/{busId}")
+    public List<Seat> getSeats(@PathVariable Long busId) {
+        return seatService.getSeatsByBus(busId);
+    }
+}
