@@ -49,12 +49,12 @@ public class BookingService {
             throw new RuntimeException("Some seats not found");
         }
 
-        // ❗ CHECK availability
+        //  CHECK availability
         if (bus.getAvailableSeats() < seats.size()) {
             throw new RuntimeException("Not enough seats available");
         }
 
-        // 💺 Reduce seats
+        //  Reduce seats
         bus.setAvailableSeats(bus.getAvailableSeats() - seats.size());
 
         double amount = seats.size() * bus.getFare();
@@ -104,7 +104,17 @@ public class BookingService {
 
         busRepository.save(bus);
 
-        return bookingRepository.save(booking);
+        Booking cancelled= bookingRepository.save(booking);
+
+        emailService.sendEmail(
+                booking.getUser().getEmail(),
+                "Booking Cancelled ❌",
+                "Hi " + booking.getUser().getName() + ",\n\n" +
+                        "Your booking has been cancelled.\n" +
+                        "Amount Refunded: ₹" + booking.getAmount()
+        );
+
+        return cancelled;
     }
     public List<Booking> getUserBookings(Long userId) {
 
