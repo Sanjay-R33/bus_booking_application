@@ -19,6 +19,10 @@ public class BookingService {
     private  SeatRepository seatRepository;
     private  EmailService emailService;
 
+    public BookingService(BookingRepository bookingRepository) {
+        this.bookingRepository = bookingRepository;
+    }
+
     public BookingService(BookingRepository bookingRepository, UserRepository userRepository, BusRepository busRepository, SeatRepository seatRepository, EmailService emailService){
         this.bookingRepository = bookingRepository;
         this.userRepository = userRepository;
