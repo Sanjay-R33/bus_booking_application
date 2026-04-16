@@ -112,5 +112,15 @@ public class BookingService {
 
         return cancelled;
     }
+    public List<Booking> getUserBookings(Long userId) {
+
+        // ✅ Check user exists
+        if (!userRepository.existsById(userId)) {
+            throw new RuntimeException("User not found");
+        }
+
+        // ✅ Fetch bookings
+        return bookingRepository.findByUserId(userId);
+    }
 
     }
