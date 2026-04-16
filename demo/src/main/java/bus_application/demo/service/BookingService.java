@@ -19,15 +19,15 @@ public class BookingService {
 
     public Booking createBooking(Booking booking) {
 
-        // ✅ Fetch user
+        // Fetch user
         User user = userRepository.findById(booking.getUser().getId())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        // ✅ Fetch bus
+        //Fetch bus
         Bus bus = busRepository.findById(booking.getBus().getId())
                 .orElseThrow(() -> new RuntimeException("Bus not found"));
 
-        // ✅ Fetch seats
+        //Fetch seats
         List<Seat> seats = seatRepository.findAllById(
                 booking.getSeats().stream().map(Seat::getId).toList()
         );
