@@ -2,6 +2,7 @@ package bus_application.demo.service;
 
 import bus_application.demo.entity.*;
 import bus_application.demo.repository.*;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -26,6 +27,7 @@ public class BookingService {
         this.emailService = emailService;
     }
 
+    @Transactional
     public Booking createBooking(Booking booking) {
 
         User user = userRepository.findById(booking.getUser().getId())
@@ -45,12 +47,23 @@ public class BookingService {
             throw new RuntimeException("Some seats not found");
         }
 
-        //  CHECK availability
-        if (bus.getAvailableSeats() < seats.size()) {
-            throw new RuntimeException("Not enough seats available");
+        // 🔥 CHECK each seat availability
+        for (Seat seat : seats) {
+            if (seat.getStatus() != Status.NOT_BOOKED) {
+                throw new IllegalStateException("Seat already booked: " + seat.getSeatNumber());
+            }
         }
 
-        //  Reduce seats
+        // 🔥 Mark seats as booked
+        for (Seat seat : seats) {
+            seat.setStatus(Status.BOOKED);
+        }
+
+        // 🔥 Reduce available seats
+        if (bus.getAvailableSeats() < seats.size()) {
+            throw new IllegalArgumentException("Not enough seats available");
+        }
+
         bus.setAvailableSeats(bus.getAvailableSeats() - seats.size());
 
         double amount = seats.size() * bus.getFare();
@@ -62,19 +75,20 @@ public class BookingService {
         booking.setStatus(Status.BOOKED);
         booking.setBookedAt(LocalDateTime.now());
 
-        // save both
         busRepository.save(bus);
+        seatRepository.saveAll(seats); // 🔥 important
 
-        Booking booked= bookingRepository.save(booking);
+        Booking booked = bookingRepository.save(booking);
 
+        // 📬 Email
         emailService.sendEmail(
-                booking.getUser().getEmail(),
+                user.getEmail(),
                 "Booking Confirmed 🎟",
-                "Hi " + booking.getUser().getName() + ",\n\n" +
+                "Hi " + user.getName() + ",\n\n" +
                         "Your booking is confirmed.\n" +
-                        "Bus: " + booking.getBus().getSource() + " → " + booking.getBus().getDestination() + "\n" +
-                        "Seats: " + booking.getSeats().size() + "\n" +
-                        "Amount: ₹" + booking.getAmount()
+                        "Bus: " + bus.getSource() + " → " + bus.getDestination() + "\n" +
+                        "Seats: " + seats.size() + "\n" +
+                        "Amount: ₹" + amount
         );
 
         return booked;

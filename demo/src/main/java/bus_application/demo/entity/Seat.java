@@ -23,4 +23,7 @@ public class Seat {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "bus_id", nullable = false)
     private Bus bus;
+
+    @Enumerated(EnumType.STRING)
+    private Status status;
 }
