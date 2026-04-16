@@ -1,5 +1,6 @@
 // components/Auth/Register.jsx
 import { useState } from 'react'
+import { userApi } from '../../services/api'
 
 export default function Register({ onRegister }) {
   const [formData, setFormData] = useState({
@@ -7,7 +8,6 @@ export default function Register({ onRegister }) {
     email: '',
     password: '',
     confirmPassword: '',
-    phone: ''
   })
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
@@ -49,24 +49,26 @@ export default function Register({ onRegister }) {
 
     setLoading(true)
 
-    // Simulate API call
-    setTimeout(() => {
-      // Create new user
-      const newUser = {
-        id: `user${Date.now()}`,
-        name: formData.name,
-        email: formData.email
-      }
+    // Call the API to register
+    const result = await userApi.register({
+      name: formData.name,
+      email: formData.email,
+      password: formData.password
+    })
 
+    if (result.success) {
+      const newUser = result.data
       sessionStorage.setItem('user', JSON.stringify(newUser))
       setSuccess('Account created successfully! Redirecting...')
 
       setTimeout(() => {
         onRegister(newUser)
       }, 1000)
+    } else {
+      setError(result.error || 'Failed to create account')
+    }
 
-      setLoading(false)
-    }, 500)
+    setLoading(false)
   }
 
   return (
@@ -100,17 +102,6 @@ export default function Register({ onRegister }) {
               value={formData.email}
               onChange={handleChange}
               required
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Phone Number (Optional)</label>
-            <input
-              type="tel"
-              name="phone"
-              placeholder="Enter your phone number"
-              value={formData.phone}
-              onChange={handleChange}
             />
           </div>
 

@@ -1,5 +1,6 @@
 // components/Auth/Login.jsx
 import { useState } from 'react'
+import { userApi } from '../../services/api'
 
 export default function Login({ onLogin }) {
   const [email, setEmail] = useState('')
@@ -18,27 +19,18 @@ export default function Login({ onLogin }) {
 
     setLoading(true)
 
-    // Simulate API call
-    setTimeout(() => {
-      // Test credentials
-      const testUsers = [
-        { id: 'user1', name: 'John Doe', email: 'john@example.com', password: 'password123' },
-        { id: 'user2', name: 'Jane Smith', email: 'jane@example.com', password: 'password123' },
-        { id: 'user3', name: 'Admin User', email: 'admin@example.com', password: 'admin123' },
-      ]
+    // Call the API to authenticate
+    const result = await userApi.login(email, password)
 
-      const user = testUsers.find(u => u.email === email && u.password === password)
+    if (result.success) {
+      const userData = result.data
+      sessionStorage.setItem('user', JSON.stringify(userData))
+      onLogin(userData)
+    } else {
+      setError(result.error || 'Invalid email or password')
+    }
 
-      if (user) {
-        const userData = { id: user.id, name: user.name, email: user.email }
-        sessionStorage.setItem('user', JSON.stringify(userData))
-        onLogin(userData)
-      } else {
-        setError('Invalid email or password')
-      }
-
-      setLoading(false)
-    }, 500)
+    setLoading(false)
   }
 
   return (
@@ -85,11 +77,7 @@ export default function Login({ onLogin }) {
 
         <div className="test-credentials">
           <p><strong>Test Credentials:</strong></p>
-          <ul>
-            <li>Email: john@example.com | Pass: password123</li>
-            <li>Email: jane@example.com | Pass: password123</li>
-            <li>Email: admin@example.com | Pass: admin123</li>
-          </ul>
+          <p>First register a new account or use existing credentials</p>
         </div>
       </div>
     </div>

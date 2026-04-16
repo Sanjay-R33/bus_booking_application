@@ -1,22 +1,28 @@
 package bus_application.demo.service;
 
+<<<<<<< HEAD
 import bus_application.demo.dto.LoginRequest;
 import bus_application.demo.dto.LoginResponse;
 import bus_application.demo.entity.User;
 import bus_application.demo.repository.UserRepository;
 import jakarta.validation.Valid;
 import lombok.NoArgsConstructor;
-import lombok.RequiredArgsConstructor;
+=======
 import org.springframework.stereotype.Service;
+
+import bus_application.demo.entity.User;
+import bus_application.demo.repository.UserRepository;
+>>>>>>> 623bcda (Updated)
+import lombok.RequiredArgsConstructor;
 
 import java.util.NoSuchElementException;
 import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
-
 public class UserService {
 
+<<<<<<< HEAD
     private  UserRepository userRepository;
 
 
@@ -40,3 +46,27 @@ public class UserService {
 
         };
     }
+=======
+    private final UserRepository userRepository;
+    private final EmailService emailService;
+
+    public User register(User user) {
+        // You can add password encoding later
+        User savedUser = userRepository.save(user);
+
+        emailService.sendEmail(
+                savedUser.getEmail(),
+                "Welcome to Bus Booking 🚍",
+                "Hi " + savedUser.getName() + ",\n\nYour account has been created successfully!"
+        );
+
+        return savedUser;
+    }
+
+    public User authenticate(String email, String password) {
+        return userRepository.findByEmail(email)
+                .filter(user -> user.getPassword().equals(password))
+                .orElseThrow(() -> new RuntimeException("Invalid email or password"));
+    }
+}
+>>>>>>> 623bcda (Updated)

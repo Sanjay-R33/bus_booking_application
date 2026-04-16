@@ -27,6 +27,23 @@ const apiCall = async (endpoint, options = {}) => {
   }
 }
 
+// USER CONTROLLER APIs - Authentication
+export const userApi = {
+  register: async (userData) => {
+    return apiCall('/users/register', {
+      method: 'POST',
+      body: JSON.stringify(userData),
+    })
+  },
+
+  login: async (email, password) => {
+    return apiCall('/users/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
+    })
+  },
+}
+
 // BUS CONTROLLER APIs
 export const busApi = {
   searchBuses: async (source, destination, travelDate) => {
@@ -69,4 +86,4 @@ export const bookingApi = {
   },
 }
 
-export default { busApi, bookingApi }
+export default { userApi, busApi, bookingApi }
