@@ -12,13 +12,22 @@ import org.springframework.stereotype.Service;
 public class UserService {
 
     private  UserRepository userRepository;
+    private EmailService emailService;
 
-    public UserService(UserRepository userRepository) {
+    public UserService(UserRepository userRepository, EmailService emailService) {
         this.userRepository = userRepository;
     }
 
     public User register(User user) {
         // You can add password encoding later
-        return userRepository.save(user);
+         User savedUser=userRepository.save(user);
+
+        emailService.sendEmail(
+                savedUser.getEmail(),
+                "Welcome to Bus Booking 🚍",
+                "Hi " + savedUser.getName() + ",\n\nYour account has been created successfully!"
+        );
+
+        return savedUser;
     }
 }

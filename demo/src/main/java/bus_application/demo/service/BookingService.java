@@ -12,34 +12,49 @@ import java.util.List;
 @RequiredArgsConstructor
 public class BookingService {
 
-    private final BookingRepository bookingRepository;
-    private final UserRepository userRepository;
-    private final BusRepository busRepository;
-    private final SeatRepository seatRepository;
+    private  BookingRepository bookingRepository;
+    private  UserRepository userRepository;
+    private  BusRepository busRepository;
+    private  SeatRepository seatRepository;
+    private  EmailService emailService;
+
+    public BookingService(BookingRepository bookingRepository, UserRepository userRepository, BusRepository busRepository, SeatRepository seatRepository, EmailService emailService){
+        this.bookingRepository = bookingRepository;
+        this.userRepository = userRepository;
+        this.busRepository = busRepository;
+        this.seatRepository = seatRepository;
+        this.emailService = emailService;
+    }
 
     public Booking createBooking(Booking booking) {
 
-        // Fetch user
         User user = userRepository.findById(booking.getUser().getId())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        //Fetch bus
         Bus bus = busRepository.findById(booking.getBus().getId())
                 .orElseThrow(() -> new RuntimeException("Bus not found"));
 
-        //Fetch seats
-        List<Seat> seats = seatRepository.findAllById(
-                booking.getSeats().stream().map(Seat::getId).toList()
-        );
+        List<Long> seatIds = booking.getSeats()
+                .stream()
+                .map(Seat::getId)
+                .toList();
 
-        if (seats.isEmpty()) {
-            throw new RuntimeException("Seats not found");
+        List<Seat> seats = seatRepository.findAllById(seatIds);
+
+        if (seats.size() != seatIds.size()) {
+            throw new RuntimeException("Some seats not found");
         }
 
-        // 💰 Calculate amount
+        // ❗ CHECK availability
+        if (bus.getAvailableSeats() < seats.size()) {
+            throw new RuntimeException("Not enough seats available");
+        }
+
+        // 💺 Reduce seats
+        bus.setAvailableSeats(bus.getAvailableSeats() - seats.size());
+
         double amount = seats.size() * bus.getFare();
 
-        // ✅ Set values
         booking.setUser(user);
         booking.setBus(bus);
         booking.setSeats(seats);
@@ -47,11 +62,22 @@ public class BookingService {
         booking.setStatus(Status.BOOKED);
         booking.setBookedAt(LocalDateTime.now());
 
-        return bookingRepository.save(booking);
-    }
+        // save both
+        busRepository.save(bus);
 
-    public List<Booking> getUserBookings(Long userId) {
-        return bookingRepository.findByUserId(userId);
+        Booking booked= bookingRepository.save(booking);
+
+        emailService.sendEmail(
+                booking.getUser().getEmail(),
+                "Booking Confirmed 🎟",
+                "Hi " + booking.getUser().getName() + ",\n\n" +
+                        "Your booking is confirmed.\n" +
+                        "Bus: " + booking.getBus().getSource() + " → " + booking.getBus().getDestination() + "\n" +
+                        "Seats: " + booking.getSeats().size() + "\n" +
+                        "Amount: ₹" + booking.getAmount()
+        );
+
+        return booked;
     }
 
     public Booking cancelBooking(Long bookingId) {
@@ -63,11 +89,18 @@ public class BookingService {
             throw new RuntimeException("Already cancelled");
         }
 
+        Bus bus = booking.getBus();
+
+        // Increase seats back
+        int seatsToReturn = booking.getSeats().size();
+        bus.setAvailableSeats(bus.getAvailableSeats() + seatsToReturn);
+
         booking.setStatus(Status.CANCELLED);
         booking.setCancelledAt(LocalDateTime.now());
 
-        return bookingRepository.save(booking);
+        busRepository.save(bus);
 
-        }
+        return bookingRepository.save(booking);
+    }
 
     }
