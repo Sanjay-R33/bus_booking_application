@@ -6,8 +6,10 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 @Service
 @RequiredArgsConstructor
@@ -18,9 +20,11 @@ public class BookingService {
     private  BusRepository busRepository;
     private  SeatRepository seatRepository;
     private  EmailService emailService;
+    private SeatBookingRepository seatBookingRepository;
 
-    public BookingService(BookingRepository bookingRepository) {
+    public BookingService(BookingRepository bookingRepository, SeatBookingRepository seatBookingRepository) {
         this.bookingRepository = bookingRepository;
+        this.seatBookingRepository=seatBookingRepository;
     }
 
     public BookingService(BookingRepository bookingRepository, UserRepository userRepository, BusRepository busRepository, SeatRepository seatRepository, EmailService emailService){
@@ -40,6 +44,8 @@ public class BookingService {
         Bus bus = busRepository.findById(booking.getBus().getId())
                 .orElseThrow(() -> new RuntimeException("Bus not found"));
 
+        LocalDate travelDate = booking.getDate();
+
         List<Long> seatIds = booking.getSeats()
                 .stream()
                 .map(Seat::getId)
@@ -51,24 +57,35 @@ public class BookingService {
             throw new RuntimeException("Some seats not found");
         }
 
-        // 🔥 CHECK each seat availability
+
         for (Seat seat : seats) {
-            if (seat.getStatus() != Status.NOT_BOOKED) {
-                throw new IllegalStateException("Seat already booked: " + seat.getSeatNumber());
+
+            boolean alreadyBooked = seatBookingRepository
+                    .existsBySeatIdAndBusIdAndTravelDateAndStatus(
+                            seat.getId(),
+                            bus.getId(),
+                            travelDate,
+                            Status.BOOKED
+                    );
+
+            if (alreadyBooked) {
+                throw new IllegalStateException(
+                        "Seat already booked for date: " + seat.getSeatNumber()
+                );
             }
         }
 
-        // 🔥 Mark seats as booked
-        for (Seat seat : seats) {
-            seat.setStatus(Status.BOOKED);
-        }
+        List<SeatBooking> seatBookings = seats.stream()
+                .map(seat -> SeatBooking.builder()
+                        .seat(seat)
+                        .bus(bus)
+                        .travelDate(travelDate)
+                        .status(Status.BOOKED)
+                        .build()
+                )
+                .toList();
 
-        // 🔥 Reduce available seats
-        if (bus.getAvailableSeats() < seats.size()) {
-            throw new IllegalArgumentException("Not enough seats available");
-        }
-
-        bus.setAvailableSeats(bus.getAvailableSeats() - seats.size());
+        seatBookingRepository.saveAll(seatBookings);
 
         double amount = seats.size() * bus.getFare();
 
@@ -79,10 +96,7 @@ public class BookingService {
         booking.setStatus(Status.BOOKED);
         booking.setBookedAt(LocalDateTime.now());
 
-        busRepository.save(bus);
-        seatRepository.saveAll(seats); // 🔥 important
-
-        Booking booked = bookingRepository.save(booking);
+        Booking saved = bookingRepository.save(booking);
 
         // 📬 Email
         emailService.sendEmail(
@@ -90,54 +104,71 @@ public class BookingService {
                 "Booking Confirmed 🎟",
                 "Hi " + user.getName() + ",\n\n" +
                         "Your booking is confirmed.\n" +
-                        "Bus: " + bus.getSource() + " → " + bus.getDestination() + "\n" +
-                        "Seats: " + seats.size() + "\n" +
-                        "Amount: ₹" + amount
+                        "Date: " + travelDate + "\n" +
+                        "Bus: " + bus.getSource() + " → " + bus.getDestination()
         );
 
-        return booked;
+        return saved;
     }
 
+    @Transactional
     public Booking cancelBooking(Long bookingId) {
 
         Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new RuntimeException("Booking not found"));
+                .orElseThrow(() -> new NoSuchElementException("Booking not found"));
 
         if (booking.getStatus() == Status.CANCELLED) {
-            throw new RuntimeException("Already cancelled");
+            throw new IllegalStateException("Booking already cancelled");
         }
 
         Bus bus = booking.getBus();
+        LocalDate travelDate = booking.getDate();
 
-        // Increase seats back
-        int seatsToReturn = booking.getSeats().size();
-        bus.setAvailableSeats(bus.getAvailableSeats() + seatsToReturn);
+        List<Long> seatIds = booking.getSeats()
+                .stream()
+                .map(Seat::getId)
+                .toList();
+
+
+        List<SeatBooking> seatBookings = seatBookingRepository
+                .findByBusIdAndTravelDateAndSeatIdIn(
+                        bus.getId(),
+                        travelDate,
+                        seatIds
+                );
+
+
+        for (SeatBooking sb : seatBookings) {
+            sb.setStatus(Status.CANCELLED);
+        }
+
+        seatBookingRepository.saveAll(seatBookings);
+
 
         booking.setStatus(Status.CANCELLED);
         booking.setCancelledAt(LocalDateTime.now());
 
-        busRepository.save(bus);
+        Booking updated = bookingRepository.save(booking);
 
-        Booking cancelled= bookingRepository.save(booking);
-
+        // 📬 Email
         emailService.sendEmail(
                 booking.getUser().getEmail(),
-                "Booking Cancelled ❌",
+                "Booking Cancelled ",
                 "Hi " + booking.getUser().getName() + ",\n\n" +
                         "Your booking has been cancelled.\n" +
+                        "Date: " + travelDate + "\n" +
                         "Amount Refunded: ₹" + booking.getAmount()
         );
 
-        return cancelled;
+        return updated;
     }
     public List<Booking> getUserBookings(Long userId) {
 
-        // ✅ Check user exists
+
         if (!userRepository.existsById(userId)) {
             throw new RuntimeException("User not found");
         }
 
-        // ✅ Fetch bookings
         return bookingRepository.findByUserId(userId);
     }
 
