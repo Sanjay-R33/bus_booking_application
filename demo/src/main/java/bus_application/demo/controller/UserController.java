@@ -1,5 +1,7 @@
 package bus_application.demo.controller;
 
+import bus_application.demo.dto.LoginRequest;
+import bus_application.demo.dto.LoginResponse;
 import bus_application.demo.entity.User;
 import bus_application.demo.service.UserService;
 import jakarta.validation.Valid;
@@ -16,8 +18,13 @@ public class UserController {
         this.userService = userService;
     }
 
-    @PostMapping
+    @PostMapping("/register")
     public User register(@Valid @RequestBody User user) {
         return userService.register(user);
+    }
+
+    @PostMapping("/login")
+    public LoginResponse login(@Valid @RequestBody LoginRequest loginRequest) {
+        return userService.login(loginRequest);
     }
 }
