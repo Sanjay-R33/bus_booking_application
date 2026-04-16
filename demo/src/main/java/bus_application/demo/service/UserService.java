@@ -17,14 +17,10 @@ public class UserService {
 
 
     public User register(User user) {
-        // You can add password encoding later
+
          User savedUser=userRepository.save(user);
 
-        emailService.sendEmail(
-                savedUser.getEmail(),
-                "Welcome to Bus Booking 🚍",
-                "Hi " + savedUser.getName() + ",\n\nYour account has been created successfully!"
-        );
+
 
         return savedUser;
     }
