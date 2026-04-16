@@ -22,18 +22,7 @@ public class BookingService {
     private  EmailService emailService;
     private SeatBookingRepository seatBookingRepository;
 
-    public BookingService(BookingRepository bookingRepository, SeatBookingRepository seatBookingRepository) {
-        this.bookingRepository = bookingRepository;
-        this.seatBookingRepository=seatBookingRepository;
-    }
 
-    public BookingService(BookingRepository bookingRepository, UserRepository userRepository, BusRepository busRepository, SeatRepository seatRepository, EmailService emailService){
-        this.bookingRepository = bookingRepository;
-        this.userRepository = userRepository;
-        this.busRepository = busRepository;
-        this.seatRepository = seatRepository;
-        this.emailService = emailService;
-    }
 
     @Transactional
     public Booking createBooking(Booking booking) {

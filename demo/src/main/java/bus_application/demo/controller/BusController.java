@@ -15,11 +15,9 @@ import java.util.List;
 @RequiredArgsConstructor
 public class BusController {
 
-    private BusService busService;
+    private final BusService busService;
 
-    public BusController(BusService busService) {
-        this.busService = busService;
-    }
+
 
     @PostMapping
     public Bus addBus(@Valid @RequestBody Bus bus) {

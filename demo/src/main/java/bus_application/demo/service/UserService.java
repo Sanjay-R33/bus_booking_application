@@ -11,13 +11,10 @@ import org.springframework.stereotype.Service;
 
 public class UserService {
 
-    private  UserRepository userRepository;
-    private EmailService emailService;
+    private  final UserRepository userRepository;
+    private final EmailService emailService;
 
-    public UserService(UserRepository userRepository, EmailService emailService, EmailService emailService1) {
-        this.userRepository = userRepository;
-        this.emailService = emailService1;
-    }
+
 
     public User register(User user) {
         // You can add password encoding later
