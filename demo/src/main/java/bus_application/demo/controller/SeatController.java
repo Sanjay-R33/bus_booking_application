@@ -14,11 +14,9 @@ import java.util.List;
 
 public class SeatController {
 
-    private  SeatService seatService;
+    private final SeatService seatService;
 
-    public SeatController(SeatService seatService) {
-        this.seatService = seatService;
-    }
+
 
     @GetMapping("/{busId}")
     public List<Seat> getSeats(@PathVariable Long busId) {

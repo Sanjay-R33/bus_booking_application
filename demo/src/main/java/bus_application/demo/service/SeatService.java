@@ -13,11 +13,9 @@ import java.util.List;
 
 public class SeatService {
 
-    private  SeatRepository seatRepository;
+    private final SeatRepository seatRepository;
 
-    public SeatService(SeatRepository seatRepository) {
-        this.seatRepository = seatRepository;
-    }
+
 
     public List<Seat> getSeatsByBus(Long busId) {
         return seatRepository.findByBusId(busId);

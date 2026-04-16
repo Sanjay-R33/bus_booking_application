@@ -22,22 +22,12 @@ public class BookingService {
     private  EmailService emailService;
     private SeatBookingRepository seatBookingRepository;
 
-    public BookingService(BookingRepository bookingRepository, SeatBookingRepository seatBookingRepository) {
-        this.bookingRepository = bookingRepository;
-        this.seatBookingRepository=seatBookingRepository;
-    }
 
-    public BookingService(BookingRepository bookingRepository, UserRepository userRepository, BusRepository busRepository, SeatRepository seatRepository, EmailService emailService){
-        this.bookingRepository = bookingRepository;
-        this.userRepository = userRepository;
-        this.busRepository = busRepository;
-        this.seatRepository = seatRepository;
-        this.emailService = emailService;
-    }
 
     @Transactional
     public Booking createBooking(Booking booking) {
 
+        // 1. Fetch User & Bus
         User user = userRepository.findById(booking.getUser().getId())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -46,6 +36,7 @@ public class BookingService {
 
         LocalDate travelDate = booking.getDate();
 
+        // 2. Fetch Seats
         List<Long> seatIds = booking.getSeats()
                 .stream()
                 .map(Seat::getId)
@@ -53,14 +44,13 @@ public class BookingService {
 
         List<Seat> seats = seatRepository.findAllById(seatIds);
 
-        if (seats.size() != seatIds.size()) {
-            throw new RuntimeException("Some seats not found");
+        if (seats.isEmpty()) {
+            throw new RuntimeException("No seats selected");
         }
 
-
+        // 3. Check if any seat already booked
         for (Seat seat : seats) {
-
-            boolean alreadyBooked = seatBookingRepository
+            boolean isBooked = seatBookingRepository
                     .existsBySeatIdAndBusIdAndTravelDateAndStatus(
                             seat.getId(),
                             bus.getId(),
@@ -68,47 +58,46 @@ public class BookingService {
                             Status.BOOKED
                     );
 
-            if (alreadyBooked) {
-                throw new IllegalStateException(
-                        "Seat already booked for date: " + seat.getSeatNumber()
-                );
+            if (isBooked) {
+                throw new RuntimeException("Seat already booked: " + seat.getSeatNumber());
             }
         }
 
+        // 4. Save seat bookings
         List<SeatBooking> seatBookings = seats.stream()
                 .map(seat -> SeatBooking.builder()
                         .seat(seat)
                         .bus(bus)
                         .travelDate(travelDate)
                         .status(Status.BOOKED)
-                        .build()
-                )
+                        .build())
                 .toList();
 
         seatBookingRepository.saveAll(seatBookings);
 
-        double amount = seats.size() * bus.getFare();
-
+        // 5. Prepare booking
         booking.setUser(user);
         booking.setBus(bus);
         booking.setSeats(seats);
-        booking.setAmount(amount);
+        booking.setAmount(seats.size() * bus.getFare());
         booking.setStatus(Status.BOOKED);
         booking.setBookedAt(LocalDateTime.now());
 
-        Booking saved = bookingRepository.save(booking);
+        Booking savedBooking = bookingRepository.save(booking);
 
-        // 📬 Email
-        emailService.sendEmail(
-                user.getEmail(),
-                "Booking Confirmed 🎟",
-                "Hi " + user.getName() + ",\n\n" +
-                        "Your booking is confirmed.\n" +
-                        "Date: " + travelDate + "\n" +
-                        "Bus: " + bus.getSource() + " → " + bus.getDestination()
-        );
+        // 6. Send email (optional — don't break booking if email fails)
+        try {
+            emailService.sendEmail(
+                    user.getEmail(),
+                    "Booking Confirmed 🎟",
+                    "Hi " + user.getName() +
+                            "\nYour booking is confirmed for " + travelDate
+            );
+        } catch (Exception e) {
+            System.out.println("Email failed: " + e.getMessage());
+        }
 
-        return saved;
+        return savedBooking;
     }
 
     @Transactional

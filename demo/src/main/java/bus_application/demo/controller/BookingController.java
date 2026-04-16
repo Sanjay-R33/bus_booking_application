@@ -16,6 +16,7 @@ public class BookingController {
     private final BookingService bookingService;
 
 
+
     @PostMapping
     public Booking book(@Valid @RequestBody Booking booking) {
         return bookingService.createBooking(booking);
